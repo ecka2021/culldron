@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+feedparser
+nltk
+sentence-transformers
+scikit-learn
