@@ -60,7 +60,6 @@ def theme_timeline(theme_id: str):
         for t in sorted_results
     ]
 
-
 from fastapi import Request
 from pydantic import BaseModel
 from rss import parse_feed
@@ -68,14 +67,50 @@ from rss import parse_feed
 class IngestRequest(BaseModel):
     feed_url: str
 
+
+
+from collections import defaultdict
+from db import get_session
+from models import Thesis
+
+def print_theme_ids_with_multiple_posts():
+    with get_session() as session:
+        theme_ids = session.query(Thesis.theme_id).all()
+
+    theme_counts = defaultdict(int)
+    for (theme_id,) in theme_ids:
+        if theme_id:
+            theme_counts[theme_id] += 1
+
+    multiple_posts = {tid: count for tid, count in theme_counts.items() if count > 1}
+
+    if multiple_posts:
+        print("Theme IDs with more than 1 post:")
+        for tid, count in multiple_posts.items():
+            print(f"{tid}: {count} posts")
+    else:
+        print("No theme IDs with more than 1 post found.")
+
+
+
 @app.post("/ingest")
 def ingest_feed(payload: IngestRequest):
     """
     Ingest a new RSS feed by URL.
     """
     try:
-        parse_feed(payload.feed_url)
-        return {"message": "Feed ingested successfully"}
+        result = parse_feed(payload.feed_url)
+        if result["total"] > 0 and result["total"] == result["skipped"]:
+            return {"message": "This URL has already been parsed."}
+        else:
+            return {"message": f"Feed ingested successfully. New posts ingested: {result['ingested']}, skipped: {result['skipped']}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+
+
+
 
