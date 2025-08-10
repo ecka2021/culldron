@@ -26,11 +26,11 @@ def embed(text: str):
         return None
     return embedding.tolist()
 
-def find_matching_theme(new_embedding: list[float], threshold: float = 0.4) -> str:
+def find_matching_theme(new_embedding: list[float], threshold: float = 0.8) -> str:
     with get_session() as session:
         existing = session.query(Thesis).filter(Thesis.embedding != None).all()
 
-            # Filter out any None or invalid embeddings
+            # filter out any None or invalid embeddings
         filtered = [(t.embedding, t.theme_id) for t in existing if t.embedding and isinstance(t.embedding, list)]
 
         if not filtered:
@@ -40,10 +40,10 @@ def find_matching_theme(new_embedding: list[float], threshold: float = 0.4) -> s
 
         embeddings, theme_ids = zip(*filtered)
 
-        # Compute cosine similarity
+        # compute cosine similarity
         scores = util.cos_sim([new_embedding], embeddings)[0]
 
-        # Find best match
+        # find best match
         best_score = float(scores.max())
         best_idx = int(scores.argmax())
         best_theme_id = theme_ids[best_idx]
